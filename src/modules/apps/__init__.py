@@ -53,7 +53,7 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     
     # Set up Chrome service with explicit path to chromedriver and logging
     service = Service(
-        executable_path='/usr/local/bin/chromedriver',
+        # executable_path='/usr/local/bin/chromedriver',
         log_output=PIPE,  # Redirect logs to pipe
         service_args=['--verbose']  # Enable verbose logging
     )
@@ -78,9 +78,9 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
             # Additional wait for dynamic content
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
-            WebDriverWait(driver, 10).until(
-                lambda d: d.execute_script('return document.readyState') == 'complete'
-            )
+            # WebDriverWait(driver, 10).until(
+            #     lambda d: d.execute_script('return document.readyState') == 'complete'
+            # )
             
             print("Taking screenshot...")
             driver.save_screenshot(output_file)
