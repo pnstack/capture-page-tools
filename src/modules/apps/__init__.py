@@ -4,7 +4,11 @@ import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from subprocess import PIPE, STDOUT
+import traceback
+
 print("Gradio app loaded.")
 
 def capture_page(url: str, output_file: str = "screenshot.png"):
@@ -15,54 +19,122 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     :param output_file: The filename to save the screenshot.
     """
     options = Options()
+    # Basic options
     options.add_argument('--headless')
     options.add_argument('--no-sandbox')  # Required in Docker
     options.add_argument('--disable-dev-shm-usage')  # Required in Docker
+    
+    # Performance and stability options
     options.add_argument('--disable-gpu')  # Required in Docker
     options.add_argument('--disable-software-rasterizer')
-    options.add_argument('--window-size=1920,1080')
     options.add_argument('--disable-extensions')
     options.add_argument('--disable-infobars')
+    
+    # Resource configuration
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--remote-debugging-port=9222')  # Fix DevTools port issue
+    options.add_argument('--disable-features=site-per-process')  # Reduce memory usage
+    options.add_argument('--memory-pressure-off')  # Prevent memory-related crashes
+    
+    # Additional stability options
+    options.add_argument('--ignore-certificate-errors')
+    options.add_argument('--allow-insecure-localhost')
+    options.add_argument('--disable-setuid-sandbox')
+    options.add_argument('--disable-web-security')
     
     # Set up Chrome service with explicit path to chromedriver and logging
     service = Service(
         executable_path='/usr/local/bin/chromedriver',
-        log_output=PIPE  # Redirect logs to pipe
-    )
-    
-    # Initialize Chrome with the service and options
-    driver = webdriver.Chrome(
-        service=service,
-        options=options
+        log_output=PIPE,  # Redirect logs to pipe
+        service_args=['--verbose']  # Enable verbose logging
     )
     
     try:
-        driver.get(url)
-        # Add a small delay to ensure page loads completely
-        driver.implicitly_wait(5)
-        driver.save_screenshot(output_file)
-        print(f"Screenshot saved: {output_file}")
-    finally:
-        driver.quit()
+        print("Initializing Chrome...")
+        driver = webdriver.Chrome(
+            service=service,
+            options=options
+        )
+        
+        print("Chrome initialized successfully")
+        
+        try:
+            print(f"Navigating to URL: {url}")
+            driver.get(url)
+            
+            # Wait for page load
+            print("Waiting for page to load...")
+            driver.implicitly_wait(10)  # Increased wait time
+            
+            # Additional wait for dynamic content
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.webdriver.support import expected_conditions as EC
+            WebDriverWait(driver, 10).until(
+                lambda d: d.execute_script('return document.readyState') == 'complete'
+            )
+            
+            print("Taking screenshot...")
+            driver.save_screenshot(output_file)
+            print(f"Screenshot saved: {output_file}")
+            return True
+            
+        except Exception as e:
+            print(f"Error during page capture: {str(e)}")
+            raise
+        finally:
+            print("Closing Chrome...")
+            driver.quit()
+            
+    except Exception as e:
+        print(f"Error initializing Chrome: {str(e)}")
+        raise Exception(f"Failed to initialize Chrome: {str(e)}")
 
 def capture_and_show(url: str):
     """Capture webpage and return the image"""
     try:
         # Get the temporary directory path (defaulting to /tmp if TMPDIR is not set)
         temp_dir = os.getenv('TMPDIR', '/tmp')
-        os.makedirs(temp_dir, exist_ok=True)
         
-        # Create temporary file in the specified directory
-        temp_path = os.path.join(temp_dir, f"screenshot_{os.urandom(8).hex()}.png")
-        
-        # Capture the webpage
-        capture_page(url, temp_path)
-        
-        # Return the image path
-        return temp_path
+        try:
+            # Ensure temp directory exists and has correct permissions
+            os.makedirs(temp_dir, mode=0o777, exist_ok=True)
+            print(f"Using temp directory: {temp_dir}")
+            
+            # Verify directory is writable
+            if not os.access(temp_dir, os.W_OK):
+                print(f"Warning: Temp directory {temp_dir} is not writable")
+                # Try to create a user-specific temp directory instead
+                temp_dir = os.path.join('/tmp', f'chrome_screenshots_{os.getuid()}')
+                os.makedirs(temp_dir, mode=0o777, exist_ok=True)
+                print(f"Created user-specific temp directory: {temp_dir}")
+                
+            # Create temporary file in the specified directory
+            temp_path = os.path.join(temp_dir, f"screenshot_{os.urandom(8).hex()}.png")
+            print(f"Temp file path: {temp_path}")
+            
+            # Capture the webpage
+            success = capture_page(url, temp_path)
+            if not success:
+                print("Screenshot capture returned False")
+                return None
+            
+            # Verify file was created
+            if not os.path.exists(temp_path):
+                print("Screenshot file was not created")
+                return None
+                
+            print("Screenshot captured successfully")
+            return temp_path
+            
+        except OSError as e:
+            print(f"OS Error: {str(e)}")
+            print(f"Stack trace: {traceback.format_exc()}")
+            return None
+            
     except Exception as e:
-        print(f"Error in capture_and_show: {str(e)}")  # Add detailed logging
-        return None  # Return None instead of error string to handle gracefully
+        print(f"Error in capture_and_show: {str(e)}")
+        print(f"Stack trace: {traceback.format_exc()}")
+        return None
     
 def create_gradio_app():
     """Create the main Gradio application with all components"""
