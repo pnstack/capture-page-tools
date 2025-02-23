@@ -62,7 +62,7 @@ def capture_and_show(url: str):
         return temp_path
     except Exception as e:
         print(f"Error in capture_and_show: {str(e)}")  # Add detailed logging
-        return f"Error capturing page: {str(e)}"
+        return None  # Return None instead of error string to handle gracefully
     
 def create_gradio_app():
     """Create the main Gradio application with all components"""
@@ -83,11 +83,32 @@ def create_gradio_app():
                 type="filepath"
             )
             
+        error_output = gr.Textbox(
+            label="Error Message",
+            visible=False,
+            interactive=False
+        )
+            
+        def capture_with_error(url):
+            try:
+                # Basic URL validation
+                if not url:
+                    return None, gr.update(visible=True, value="Please enter a URL")
+                if not url.startswith(('http://', 'https://')):
+                    return None, gr.update(visible=True, value="Please enter a valid URL starting with http:// or https://")
+                    
+                result = capture_and_show(url)
+                if result is None:
+                    return None, gr.update(visible=True, value="Failed to capture screenshot. Please check the URL and try again.")
+                return result, gr.update(visible=False, value="")
+            except Exception as e:
+                return None, gr.update(visible=True, value=f"Error: {str(e)}")
+            
         # Connect the components
         capture_btn.click(
-            fn=capture_and_show,
+            fn=capture_with_error,
             inputs=[url_input],
-            outputs=[output_image]
+            outputs=[output_image, error_output]
         )
         
     return app
