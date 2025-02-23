@@ -33,10 +33,10 @@ RUN apt-get -y update && apt-get install -y \
 # Install chromedriver
 RUN apt-get install -yqq unzip
 RUN CHROMEDRIVER_VERSION=133.0.6943.126 && \
-    wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.126/linux64/chromedriver-linux64.zip && \
-    unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ && \
+    wget -O /tmp/chromedriver-linux64.zip https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.126/linux64/chromedriver-linux64.zip && \
+    unzip /tmp/chromedriver-linux64.zip chromedriver -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/chromedriver && \
-    rm /tmp/chromedriver.zip
+    rm /tmp/chromedriver-linux64.zip
 
 # Set display port and shared memory settings
 ENV DISPLAY=:99
