@@ -8,7 +8,7 @@ tags:
 - Python
 fullwidth: true
 license: mit
-app_port: 8080
+app_port: 7860
 ---
 
 # Python Project Template
