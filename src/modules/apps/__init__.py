@@ -4,6 +4,7 @@ import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from subprocess import PIPE, STDOUT
 print("Gradio app loaded.")
 
 def capture_page(url: str, output_file: str = "screenshot.png"):
@@ -14,15 +15,31 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     :param output_file: The filename to save the screenshot.
     """
     options = Options()
-    options.add_argument("--headless")  # Run in headless mode
-    options.add_argument("--window-size=1920,1080")  # Set window size
+    options.add_argument('--headless')
+    options.add_argument('--no-sandbox')  # Required in Docker
+    options.add_argument('--disable-dev-shm-usage')  # Required in Docker
+    options.add_argument('--disable-gpu')  # Required in Docker
+    options.add_argument('--disable-software-rasterizer')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--disable-extensions')
+    options.add_argument('--disable-infobars')
     
-    # Initialize Chrome service
-    service = Service()
-    driver = webdriver.Chrome(service=service, options=options)
+    # Set up Chrome service with explicit path to chromedriver and logging
+    service = Service(
+        executable_path='/usr/local/bin/chromedriver',
+        log_output=PIPE  # Redirect logs to pipe
+    )
+    
+    # Initialize Chrome with the service and options
+    driver = webdriver.Chrome(
+        service=service,
+        options=options
+    )
     
     try:
         driver.get(url)
+        # Add a small delay to ensure page loads completely
+        driver.implicitly_wait(5)
         driver.save_screenshot(output_file)
         print(f"Screenshot saved: {output_file}")
     finally:
@@ -44,6 +61,7 @@ def capture_and_show(url: str):
         # Return the image path
         return temp_path
     except Exception as e:
+        print(f"Error in capture_and_show: {str(e)}")  # Add detailed logging
         return f"Error capturing page: {str(e)}"
     
 def create_gradio_app():
