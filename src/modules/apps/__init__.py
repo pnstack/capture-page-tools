@@ -19,8 +19,9 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     :param output_file: The filename to save the screenshot.
     """
     options = Options()
+    
     # Basic options
-    options.add_argument('--headless')
+    options.add_argument('--headless=new')  # New headless mode
     options.add_argument('--no-sandbox')  # Required in Docker
     options.add_argument('--disable-dev-shm-usage')  # Required in Docker
     
@@ -32,15 +33,23 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     
     # Resource configuration
     options.add_argument('--window-size=1920,1080')
-    options.add_argument('--remote-debugging-port=9222')  # Fix DevTools port issue
-    options.add_argument('--disable-features=site-per-process')  # Reduce memory usage
-    options.add_argument('--memory-pressure-off')  # Prevent memory-related crashes
+    options.add_argument('--disable-features=NetworkService,NetworkServiceInProcess')
+    options.add_argument('--disable-features=site-per-process')
+    
+    # Memory and process settings
+    options.add_argument('--single-process')  # Run in single process mode
+    options.add_argument('--memory-pressure-off')
+    options.add_argument('--disable-crash-reporter')
+    options.add_argument('--disable-breakpad')  # Disable crash reporting
     
     # Additional stability options
     options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--allow-insecure-localhost')
     options.add_argument('--disable-setuid-sandbox')
     options.add_argument('--disable-web-security')
+    
+    # Set specific shared memory /dev/shm size (if needed)
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--shm-size=2g')
     
     # Set up Chrome service with explicit path to chromedriver and logging
     service = Service(
@@ -83,7 +92,18 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
             raise
         finally:
             print("Closing Chrome...")
-            driver.quit()
+            try:
+                driver.close()  # Close current window
+                driver.quit()   # Quit browser completely
+                import psutil   # For process cleanup
+                current_pid = os.getpid()
+                current_process = psutil.Process(current_pid)
+                children = current_process.children(recursive=True)
+                for child in children:
+                    if 'chrome' in child.name().lower():
+                        child.terminate()
+            except Exception as cleanup_error:
+                print(f"Error during cleanup: {cleanup_error}")
             
     except Exception as e:
         print(f"Error initializing Chrome: {str(e)}")

@@ -1,19 +1,49 @@
 # Use a Python image with uv pre-installed
 FROM ghcr.io/astral-sh/uv:python3.11-bookworm
 
-# Install Chrome and dependencies
+# Install Chrome and its dependencies
+RUN apt-get -y update && apt-get install -y wget gnupg2
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
 RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-RUN apt-get -y update
-RUN apt-get install -y google-chrome-stable
+RUN apt-get -y update && apt-get install -y \
+    google-chrome-stable \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    fonts-thai-tlwg \
+    fonts-kacst \
+    fonts-symbola \
+    fonts-noto \
+    fonts-freefont-ttf \
+    libxss1 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libcups2 \
+    libxrandr2 \
+    libasound2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
+    libgbm1
 
-# install chromedriver
+# Install chromedriver
 RUN apt-get install -yqq unzip
-RUN wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/`curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE`/chromedriver_linux64.zip
-RUN unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/
+RUN CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
+    wget -O /tmp/chromedriver.zip http://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
+    unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ && \
+    chmod +x /usr/local/bin/chromedriver && \
+    rm /tmp/chromedriver.zip
 
-# set display port to avoid crash
+# Set display port and shared memory settings
 ENV DISPLAY=:99
+ENV DBUS_SESSION_BUS_ADDRESS=/dev/null
+
+# Create a shared memory volume
+VOLUME /dev/shm
 
 # Create a non-root user
 RUN useradd -m -u 1000 appuser
