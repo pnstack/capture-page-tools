@@ -43,7 +43,7 @@ jobs:
           SPACE_NAME: ${{ secrets.SPACE_NAME }}
         run: |
           # Create repository URL
-          REPO_URL="https://huggingface.co/spaces/$HF_USERNAME/template-python"
+          REPO_URL="https://huggingface.co/spaces/$HF_USERNAME/capture-page-tools"
           
           # Add Hugging Face as a remote and push
           git remote add space $REPO_URL || git remote set-url space $REPO_URL

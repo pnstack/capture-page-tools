@@ -10,7 +10,7 @@ def main() -> None:
     """Main application entry point."""
     try:
         print("Start app...")
-        import src.modules.api
+        import src.modules.apps
 
     except Exception as e:
         logging.error(f"Application failed to start: {e}", exc_info=True)
