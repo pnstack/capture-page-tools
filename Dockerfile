@@ -32,8 +32,8 @@ RUN apt-get -y update && apt-get install -y \
 
 # Install chromedriver
 RUN apt-get install -yqq unzip
-RUN CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) && \
-    wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip && \
+RUN CHROMEDRIVER_VERSION=133.0.6943.126 && \
+    wget -O /tmp/chromedriver.zip https://storage.googleapis.com/chrome-for-testing-public/133.0.6943.126/linux64/chromedriver-linux64.zip && \
     unzip /tmp/chromedriver.zip chromedriver -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/chromedriver && \
     rm /tmp/chromedriver.zip
