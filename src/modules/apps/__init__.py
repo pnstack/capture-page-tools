@@ -3,7 +3,9 @@ import tempfile
 import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 print("Gradio app loaded.")
+
 def capture_page(url: str, output_file: str = "screenshot.png"):
     """
     Captures a screenshot of the given webpage.
@@ -14,8 +16,10 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
     options = Options()
     options.add_argument("--headless")  # Run in headless mode
     options.add_argument("--window-size=1920,1080")  # Set window size
-
-    driver = webdriver.Chrome(options=options)
+    
+    # Initialize Chrome service
+    service = Service()
+    driver = webdriver.Chrome(service=service, options=options)
     
     try:
         driver.get(url)
@@ -27,9 +31,12 @@ def capture_page(url: str, output_file: str = "screenshot.png"):
 def capture_and_show(url: str):
     """Capture webpage and return the image"""
     try:
-        # Create temporary file for the screenshot
-        with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
-            temp_path = tmp.name
+        # Get the temporary directory path (defaulting to /tmp if TMPDIR is not set)
+        temp_dir = os.getenv('TMPDIR', '/tmp')
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Create temporary file in the specified directory
+        temp_path = os.path.join(temp_dir, f"screenshot_{os.urandom(8).hex()}.png")
         
         # Capture the webpage
         capture_page(url, temp_path)

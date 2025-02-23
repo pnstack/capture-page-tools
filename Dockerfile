@@ -34,10 +34,16 @@ ENTRYPOINT []
 # Run setup.py
 RUN python setup.py
 
-# Create cache directory and set permissions
+# Create cache directories and set permissions
 RUN mkdir -p /.cache/selenium && \
+    mkdir -p /tmp/screenshots && \
     chown -R appuser:appuser /.cache/selenium && \
-    chmod 755 /.cache/selenium
+    chown -R appuser:appuser /tmp/screenshots && \
+    chmod 755 /.cache/selenium && \
+    chmod 755 /tmp/screenshots
+
+# Set temporary directory environment variable
+ENV TMPDIR=/tmp/screenshots
 
 # Set user
 USER appuser
